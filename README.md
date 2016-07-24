@@ -23,17 +23,7 @@ multi_json          1.12.1
 
 ## Installation
 
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'formatted-gem-updates'
-```
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
+Install it standalone by running:
 
     $ gem install formatted-gem-updates
 
