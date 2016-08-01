@@ -5,11 +5,13 @@ exit 1 unless $?.success?
 
 Dir.chdir GIT_ROOT
 
+current_ref = `git rev-parse --abbrev-ref HEAD`.strip
+
 system("git checkout head^")
 
 old_list = `bundle list`
 
-system("git checkout master")
+system("git checkout #{current_ref}")
 
 new_list = `bundle list`
 
