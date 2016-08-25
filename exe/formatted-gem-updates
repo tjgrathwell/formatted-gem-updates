@@ -1,5 +1,16 @@
 #!/usr/bin/env ruby
 
+require 'optparse'
+
+command_line_options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: formatted-gem-updates [options]"
+
+  opts.on("--amend", "Amend output to the last commit message") do |a|
+    command_line_options[:amend] = a
+  end
+end.parse!
+
 GIT_ROOT = `git rev-parse --show-toplevel`.strip
 exit 1 unless $?.success?
 
@@ -54,24 +65,34 @@ def format_for_length(length, lhs, rhs)
   "%-#{length}s  %s" % [lhs, rhs]
 end
 
+output_lines = []
+
 if updated.length > 0
-  puts "UPDATED:"
+  output_lines << "UPDATED:"
   updated.each do |gem, info|
     formatted_version = format_for_length($longest_version_length, info[:old], info[:new])
-    puts format_for_length($longest_name_length, gem, formatted_version)
+    output_lines << format_for_length($longest_name_length, gem, formatted_version)
   end
 end
 
 if new_gems.length > 0
-  puts "\nADDED:"
+  output_lines << "\nADDED:"
   new_gems.each do |gem, version|
-    puts format_for_length($longest_name_length, gem, version)
+    output_lines << format_for_length($longest_name_length, gem, version)
   end
 end
 
 if removed.length > 0
-  puts "\nREMOVED:"
+  output_lines << "\nREMOVED:"
   removed.each do |gem, version|
-    puts format_for_length($longest_name_length, gem, version)
+    output_lines << format_for_length($longest_name_length, gem, version)
   end
+end
+
+if command_line_options[:amend]
+  existing_message = `git log -1 --pretty=%B`.strip
+  output_lines.unshift("#{existing_message}\n")
+  system("git", "commit", "--amend", "-m", output_lines.join("\n"))
+else
+  puts output_lines
 end
