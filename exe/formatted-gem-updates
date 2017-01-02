@@ -26,20 +26,34 @@ current_ref = `git rev-parse --abbrev-ref HEAD`.strip
 
 system("git checkout head^")
 
-def capture_or_fail(cmd)
-  `#{cmd}`.tap do |result|
-    unless $?.success?
-      puts "Tried to run the command '#{cmd}' but failed with this output:\n#{result}"
-      exit 1
+class CommandRunner
+  attr_accessor :use_rvm
+  def initialize(use_rvm: false)
+    @use_rvm = use_rvm
+  end
+
+  def capture_or_fail(cmd)
+    if use_rvm && File.exists?('.ruby-version')
+      ruby_version = File.read('.ruby-version').strip
+      cmd = "rvm #{ruby_version} do #{cmd}"
+    end
+
+    `#{cmd}`.tap do |result|
+      unless $?.success?
+        puts "Tried to run the command '#{cmd}' but failed with this output:\n#{result}"
+        exit 1
+      end
     end
   end
 end
 
-old_list = capture_or_fail('bundle list')
+command_runner = CommandRunner.new(use_rvm: `which ruby`.include?('/.rvm/'))
+
+old_list = command_runner.capture_or_fail('bundle list')
 
 system("git checkout #{current_ref}")
 
-new_list = capture_or_fail('bundle list')
+new_list = command_runner.capture_or_fail('bundle list')
 
 def gem_versions(list_output)
   list_output.split("\n").each_with_object({}) do |line, hsh|
